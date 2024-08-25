@@ -48,18 +48,18 @@ const FcpScore: React.FC<{ url: string }> = ({ url }) => {
       return {
         color: "text-green-500",
         Icon: Rabbit,
-        description: "FCP 값이 매우 빠릅니다.",
+        description: "최초 콘텐츠 표시 시간이 매우 빠릅니다.",
       };
     if (fcpValue <= 2500)
       return {
         color: "text-yellow-500",
         Icon: Turtle,
-        description: "FCP 값이 보통입니다.",
+        description: "최초 콘텐츠 표시 시간이 보통입니다.",
       };
     return {
       color: "text-red-500",
       Icon: Snail,
-      description: "FCP 값이 느립니다.",
+      description: "최초 콘텐츠 표시 시간이 느립니다.",
     };
   };
 

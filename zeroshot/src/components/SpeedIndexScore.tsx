@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { fetchPageSpeedData } from "@/utils/fetchPageSpeedData";
 import { Loader2, Rabbit, Turtle, Snail } from "lucide-react";
 
-const FidScore: React.FC<{ url: string }> = ({ url }) => {
+const SpeedIndexScore: React.FC<{ url: string }> = ({ url }) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,56 +28,56 @@ const FidScore: React.FC<{ url: string }> = ({ url }) => {
   }, [url]);
 
   const processDataForChart = () => {
-    if (!data) return { fidValue: null };
+    if (!data) return { speedIndexValue: null };
 
     const lighthouseResult = data.lighthouseResult;
     const audits = lighthouseResult.audits;
 
-    // FID 값을 밀리초 단위로 가져옴
-    const fidValue = audits["first-input-delay"]?.numericValue;
+    // Speed Index 값을 밀리초 단위로 가져옴
+    const speedIndexValue = audits["speed-index"]?.numericValue;
 
-    return { fidValue };
+    return { speedIndexValue };
   };
 
-  const { fidValue } = processDataForChart();
+  const { speedIndexValue } = processDataForChart();
 
   const getTextColorAndIcon = () => {
-    if (fidValue === null || fidValue === undefined)
+    if (speedIndexValue === null || speedIndexValue === undefined)
       return { color: "text-neutral-500", Icon: null, description: "" };
-    if (fidValue <= 100)
+    if (speedIndexValue <= 3400)
       return {
         color: "text-green-500",
         Icon: Rabbit,
-        description: "FID 값이 매우 빠릅니다.",
+        description: "페이지 로딩 속도가 매우 빠릅니다.",
       };
-    if (fidValue <= 300)
+    if (speedIndexValue <= 5800)
       return {
         color: "text-yellow-500",
         Icon: Turtle,
-        description: "FID 값이 보통입니다.",
+        description: "페이지 로딩 속도가 보통입니다.",
       };
     return {
       color: "text-red-500",
       Icon: Snail,
-      description: "FID 값이 느립니다.",
+      description: "페이지 로딩 속도가 느립니다.",
     };
   };
 
   const { color, Icon, description } = getTextColorAndIcon();
 
-  const FIDBarChart = () => {
+  const SpeedIndexBarChart = () => {
     const totalWidth = 100;
-    const maxFID = 500; // 기준을 500ms로 설정
+    const maxSpeedIndex = 7000; // 기준을 7000ms로 설정
 
-    const goodWidth = (100 / maxFID) * totalWidth; // 100ms까지는 Good
-    const needsImprovementWidth = (200 / maxFID) * totalWidth; // 300ms까지는 Needs Improvement
-    const poorWidth = (200 / maxFID) * totalWidth; // 300ms 이상은 Poor
+    const goodWidth = (3400 / maxSpeedIndex) * totalWidth; // 3400ms까지는 Good
+    const needsImprovementWidth = (2400 / maxSpeedIndex) * totalWidth; // 5800ms까지는 Needs Improvement
+    const poorWidth = (1200 / maxSpeedIndex) * totalWidth; // 7000ms 이상은 Poor
 
-    // FID 값에 따른 색상 결정
-    const barColor = fidValue
-      ? fidValue <= 100
+    // Speed Index 값에 따른 색상 결정
+    const barColor = speedIndexValue
+      ? speedIndexValue <= 3400
         ? "bg-green-500"
-        : fidValue <= 300
+        : speedIndexValue <= 5800
         ? "bg-yellow-500"
         : "bg-red-500"
       : "bg-neutral-200";
@@ -90,7 +90,7 @@ const FidScore: React.FC<{ url: string }> = ({ url }) => {
           ) : (
             <>
               <span className={`text-3xl font-semibold tabular-nums slashed-zero ${color}`}>
-                {fidValue !== null && fidValue !== undefined ? `${fidValue.toFixed(2)} ms` : "-"}
+                {speedIndexValue !== null && speedIndexValue !== undefined ? `${speedIndexValue.toFixed(2)} ms` : "-"}
               </span>
             </>
           )}
@@ -126,9 +126,9 @@ const FidScore: React.FC<{ url: string }> = ({ url }) => {
         </div>
         <div className="flex justify-between mt-2 text-xs text-neutral-800 tabular-nums slashed-zero">
           <span>0ms</span>
-          <span>100ms</span>
-          <span>300ms</span>
-          <span>500ms</span>
+          <span>3400ms</span>
+          <span>5800ms</span>
+          <span>7000ms</span>
         </div>
         <div className="w-full mt-4 p-3 rounded bg-neutral-100 callout flex flex-row gap-1">
           {Icon && <Icon className={`${color}`} size={20} />}
@@ -141,9 +141,9 @@ const FidScore: React.FC<{ url: string }> = ({ url }) => {
   return (
     <div className="w-full">
       {error && <p className="text-red-500 mt-4">{error}</p>}
-      <FIDBarChart />
+      <SpeedIndexBarChart />
     </div>
   );
 };
 
-export default FidScore;
+export default SpeedIndexScore;
