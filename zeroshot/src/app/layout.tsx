@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/react";
 
 const pretendard = localFont({
   src: "../../public/fonts/PretendardVariable.woff2",
@@ -25,6 +26,7 @@ export default function RootLayout({
         <main className="w-screen flex flex-col justify-center items-center">
           {children}
         </main>
+        <Analytics />
       </body>
     </html>
   );
