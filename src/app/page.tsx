@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Timer from "@/components/Timer";
 import MetricScore from "@/components/MetricScore";
+import ReactionTest from "@/components/ReactionTest";
 
 import {
   Card,
@@ -14,17 +15,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ExternalLink, Loader2 } from "lucide-react";
+import { ArrowRight, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const validateUrlWithRegex = (inputUrl: string) => {
   const urlPattern = new RegExp(
     "^((https?:\\/\\/)?" +
-      "(([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.)+[a-zA-Z]{2,}|" +
-      "((\\d{1,3}\\.){3}\\d{1,3}))" +
-      "(\\:\\d+)?(\\/[-a-zA-Z\\d%_.~+]*)*" +
-      "(\\?[;&a-zA-Z\\d%_.~+=-]*)?" +
-      "(\\#[-a-zA-Z\\d_]*)?$"
+    "(([a-zA-Z\\d]([a-zA-Z\\d-]*[a-zA-Z\\d])*)\\.)+[a-zA-Z]{2,}|" +
+    "((\\d{1,3}\\.){3}\\d{1,3}))" +
+    "(\\:\\d+)?(\\/[-a-zA-Z\\d%_.~+]*)*" +
+    "(\\?[;&a-zA-Z\\d%_.~+=-]*)?" +
+    "(\\#[-a-zA-Z\\d_]*)?$"
   );
   return !!urlPattern.test(inputUrl);
 };
@@ -35,6 +36,15 @@ export default function Page() {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [stop, setStop] = useState<boolean>(false);
+  const [reactionError, setReactionError] = useState<number>(0);
+
+  // Load cached URL on initial render
+  useEffect(() => {
+    const cachedUrl = localStorage.getItem('lastUrl');
+    if (cachedUrl) {
+      setUrl(cachedUrl);
+    }
+  }, []);
 
   const handleSubmit = async () => {
     const inputElement = document.getElementById(
@@ -58,14 +68,38 @@ export default function Page() {
         }, 1500);
       } else {
         setIsInvalid(true);
-        setErrorMessage("Please enter a valid URL.");
+        setErrorMessage("올바른 URL을 입력해주세요.");
       }
     }
   };
 
+  const handleDisconnect = () => {
+    setUrl("");
+    setStop(true);
+    const inputElement = document.getElementById(
+      "targetUrl"
+    ) as HTMLInputElement;
+    if (inputElement) {
+      inputElement.value = "";
+    }
+  };
+
+  const handleErrorApply = (error: number) => {
+    setReactionError(error);
+  };
+
+  const handleErrorReset = () => {
+    setReactionError(0);
+  };
+
   return (
     <div className="flex flex-col w-full mt-16 md:mt-32 mb-16 md:mb-32 px-4 items-center">
-      <Timer serverTimeUrl={url} stop={stop} />
+      <Timer
+        serverTimeUrl={url}
+        stop={stop}
+        onDisconnect={handleDisconnect}
+        reactionError={reactionError}
+      />
 
       <div className="flex flex-col w-full max-w-md mt-4">
         <div
@@ -89,6 +123,7 @@ export default function Page() {
                 "text-red-500": isInvalid,
               }
             )}
+            defaultValue={url}
           ></input>
           <Button
             type="submit"
@@ -118,8 +153,19 @@ export default function Page() {
         )}
       </div>
 
-      <div className="chart-wrapper w-full flex flex-col flex-wrap items-center justify-center gap-6 p-0 md:p-6 sm:flex-row sm:p-8 mt-4">
-        <div className="grid w-8xl gap-6 sm:grid-cols-2 lg:grid-cols-1">
+      {/* Performance Metrics Section */}
+      <div className="w-full max-w-screen-sm mt-8">
+        {/* Reaction Test Section - Full Width */}
+        <div className="w-full mb-6">
+          <ReactionTest
+            onErrorApply={handleErrorApply}
+            onErrorReset={handleErrorReset}
+            isErrorApplied={reactionError !== 0}
+          />
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="chart-wrapper grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="w-full">
             <CardHeader className="space-y-0 pb-2 gap-1">
               <CardDescription className="text-sm font-semibold text-neutral-900">
@@ -146,6 +192,7 @@ export default function Page() {
               </CardDescription>
             </CardFooter>
           </Card>
+
           <Card className="w-full">
             <CardHeader className="space-y-0 pb-2 gap-1">
               <CardDescription className="text-sm font-semibold text-neutral-900">
@@ -172,8 +219,7 @@ export default function Page() {
               </CardDescription>
             </CardFooter>
           </Card>
-        </div>
-        <div className="grid w-8xl gap-6 sm:grid-cols-2 lg:grid-cols-1">
+
           <Card className="w-full">
             <CardHeader className="space-y-0 pb-2 gap-1">
               <CardDescription className="text-sm font-semibold text-neutral-900">
@@ -200,6 +246,7 @@ export default function Page() {
               </CardDescription>
             </CardFooter>
           </Card>
+
           <Card className="w-full">
             <CardHeader className="space-y-0 pb-2 gap-1">
               <CardDescription className="text-sm font-semibold text-neutral-900">
@@ -228,6 +275,15 @@ export default function Page() {
           </Card>
         </div>
       </div>
+
+      {/* Info Card */}
+      {url && (
+        <Card className="w-full max-w-md mt-8">
+          <CardContent className="pt-6">
+
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
