@@ -4,7 +4,7 @@ Allow: /
 Disallow: /api/
 
 # Host
-Host: https://zeroshot.vercel.app
+Host: https://zeroshot.kr
 
 # Sitemaps
-Sitemap: https://zeroshot.vercel.app/sitemap.xml
+Sitemap: https://zeroshot.kr/sitemap.xml

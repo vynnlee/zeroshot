@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const baseUrl = "https://zeroshot.vercel.app";
+  const baseUrl = "https://zeroshot.kr";
 
   // Generate the XML sitemap
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

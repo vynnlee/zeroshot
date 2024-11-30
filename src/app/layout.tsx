@@ -13,7 +13,7 @@ const pretendard = localFont({
   variable: "--font-pretendard",
 });
 
-const baseUrl = 'https://zeroshot.vercel.app';
+const baseUrl = 'https://zeroshot.kr';
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
