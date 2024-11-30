@@ -1,0 +1,78 @@
+{
+  "name": "ZeroShot - 올클을 위한 간편한 서버시간 알리미",
+  "short_name": "ZeroShot",
+  "description": "실시간 서버시간 확인, 반응속도 테스트, 웹사이트 성능 분석을 한 번에. 티켓팅과 수강신청을 위한 필수 도구, ZeroShot에서 시작하세요.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "productivity"],
+  "orientation": "portrait",
+  "lang": "ko-KR",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "서버시간 확인",
+      "short_name": "서버시간",
+      "description": "실시간 서버시간 확인하기",
+      "url": "/"
+    },
+    {
+      "name": "반응속도 테스트",
+      "short_name": "반응속도",
+      "description": "반응속도 테스트하기",
+      "url": "/reaction"
+    }
+  ]
+}

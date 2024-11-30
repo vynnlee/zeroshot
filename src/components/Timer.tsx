@@ -6,6 +6,7 @@ import { fetchServerTime, clearTimeCache } from "../utils/fetchServerTime";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Loader2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TimerProps {
   serverTimeUrl: string;
@@ -34,7 +35,7 @@ const Timer: React.FC<TimerProps> = ({
   const [currentError, setCurrentError] = useState<number>(0);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     state: 'initial',
-    message: "타임존에 연결되었습니다.",
+    message: "표준시에 연결되었습니다.",
   });
   const [currentUrl, setCurrentUrl] = useState<string>("");
 
@@ -49,10 +50,10 @@ const Timer: React.FC<TimerProps> = ({
     const offset = seoulTime.getTime() - now.getTime();
     setLocalTimeOffset(offset);
     setServerTime(Date.now() + offset);
-    setCurrentUrl("타임존");
+    setCurrentUrl("표준시");
     setSyncStatus({
       state: 'synchronized',
-      message: "타임존에 연결되었습니다.",
+      message: "표준시에 연결되었습니다.",
     });
   }, []);
 
@@ -147,8 +148,9 @@ const Timer: React.FC<TimerProps> = ({
     if (!serverTime) return;
 
     intervalRef.current = setInterval(() => {
-      const currentTime = Date.now() + localTimeOffset - reactionError;
-      const roundedTime = Math.round(currentTime / 10) * 10;
+      const currentTime = Date.now() + localTimeOffset;
+      const correctedTime = currentTime - reactionError;
+      const roundedTime = Math.round(correctedTime / 10) * 10;
 
       setServerTime(roundedTime);
 
@@ -188,6 +190,12 @@ const Timer: React.FC<TimerProps> = ({
     .toISOString()
     .slice(11, 23);
 
+  const originalSeoulTime = reactionError ?
+    new Date(serverTime + reactionError + 9 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(11, 23)
+    : null;
+
   return (
     <div className="flex flex-col items-center gap-2">
       <Badge
@@ -201,9 +209,19 @@ const Timer: React.FC<TimerProps> = ({
         })}
       </Badge>
 
-      <h1 className="font-medium text-6xl md:text-7xl text-center tabular-nums slashed-zero">
-        {seoulTime}
-      </h1>
+      <div className="flex flex-col items-center">
+        <h1 className={cn(
+          "font-medium text-6xl md:text-7xl text-center tabular-nums slashed-zero transition-colors duration-300",
+          reactionError !== 0 && "text-blue-500"
+        )}>
+          {seoulTime}
+        </h1>
+        {originalSeoulTime && (
+          <div className="text-xl text-neutral-500 tabular-nums slashed-zero mt-1">
+            {originalSeoulTime}
+          </div>
+        )}
+      </div>
 
       <div className="flex flex-row gap-2 items-center">
         <span className="relative flex h-2 w-2">
@@ -218,7 +236,7 @@ const Timer: React.FC<TimerProps> = ({
         </span>
 
         <h3 className="flex flex-row gap-1 font-medium text-sm text-neutral-800">
-          {currentUrl !== "타임존" ? (
+          {currentUrl !== "표준시" ? (
             <>
               <Link
                 className="underline underline-offset-2 hover:text-neutral-500 hover:decoration-neutral-500 ease-out duration-200"
@@ -248,7 +266,7 @@ const Timer: React.FC<TimerProps> = ({
         <p className="text-xs text-neutral-500">
           현재 오차: {currentError} ms
         </p>
-        {lastSyncRef.current > 0 && currentUrl !== "타임존" && (
+        {lastSyncRef.current > 0 && currentUrl !== "표준시" && (
           <p className="text-xs text-neutral-500">
             마지막 동기화: {Math.floor((Date.now() - lastSyncRef.current) / 1000)}초 전
           </p>

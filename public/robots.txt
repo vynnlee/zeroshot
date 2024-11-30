@@ -1,0 +1,10 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Host
+Host: https://zeroshot.vercel.app
+
+# Sitemaps
+Sitemap: https://zeroshot.vercel.app/sitemap.xml
