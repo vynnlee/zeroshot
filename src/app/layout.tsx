@@ -134,11 +134,6 @@ export default function RootLayout({
               "url": baseUrl,
               "applicationCategory": "WebApplication",
               "operatingSystem": "Any",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "KRW"
-              },
               "featureList": [
                 "실시간 서버시간 확인",
                 "반응속도 테스트",
@@ -146,13 +141,6 @@ export default function RootLayout({
                 "티켓팅 도우미",
                 "수강신청 도우미"
               ],
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "ratingCount": "100",
-                "bestRating": "5",
-                "worstRating": "1"
-              }
             })
           }}
         />
