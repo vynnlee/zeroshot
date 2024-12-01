@@ -5,7 +5,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between text-sm">
+      <div className="px-2 md:px-8 flex flex-row h-14 items-center justify-between text-sm">
         <p className="text-foreground/60">
           © 2024 ZeroShot. All rights reserved.
         </p>

@@ -38,7 +38,6 @@ const validateUrlWithRegex = (inputUrl: string) => {
   return !!urlPattern.test(inputUrl);
 };
 
-// Add structured data for the page
 const pageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
@@ -68,7 +67,6 @@ export default function Page() {
   const [stop, setStop] = useState<boolean>(false);
   const [reactionError, setReactionError] = useState<number>(0);
 
-  // Load cached URL on initial render
   useEffect(() => {
     const cachedUrl = localStorage.getItem('lastUrl');
     if (cachedUrl) {
@@ -97,7 +95,6 @@ export default function Page() {
         setLoading(true);
         setStop(false);
 
-        // Update input field if it exists
         const inputElement = document.getElementById("targetUrl") as HTMLInputElement;
         if (inputElement) {
           inputElement.value = targetUrl;
@@ -121,9 +118,7 @@ export default function Page() {
   const handleDisconnect = () => {
     setUrl("");
     setStop(true);
-    const inputElement = document.getElementById(
-      "targetUrl"
-    ) as HTMLInputElement;
+    const inputElement = document.getElementById("targetUrl") as HTMLInputElement;
     if (inputElement) {
       inputElement.value = "";
     }
@@ -207,7 +202,6 @@ export default function Page() {
         </div>
 
         <div className="w-full max-w-screen-sm mt-8">
-          {/* Quick Fetch Buttons */}
           <div className="flex flex-wrap flex-1 flex-row mb-4 gap-2">
             <Button
               variant="outline"
@@ -243,7 +237,6 @@ export default function Page() {
             </Button>
           </div>
 
-          {/* Reaction Test Section - Full Width */}
           <div className="w-full mb-6">
             <ReactionTest
               onErrorApply={handleErrorApply}
@@ -252,7 +245,6 @@ export default function Page() {
             />
           </div>
 
-          {/* Metrics Grid */}
           <div className="chart-wrapper grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="w-full">
               <CardHeader className="space-y-0 pb-2 gap-1">
@@ -363,15 +355,6 @@ export default function Page() {
             </Card>
           </div>
         </div>
-
-        {/* Info Card */}
-        {url && (
-          <Card className="w-full max-w-md mt-8">
-            <CardContent className="pt-6">
-
-            </CardContent>
-          </Card>
-        )}
       </div>
     </>
   );

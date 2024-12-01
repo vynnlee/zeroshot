@@ -38,10 +38,12 @@ const Timer: React.FC<TimerProps> = ({
     message: "표준시에 연결되었습니다.",
   });
   const [currentUrl, setCurrentUrl] = useState<string>("");
+  const [showFixedBar, setShowFixedBar] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const syncIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const lastSyncRef = useRef<number>(0);
+  const timerRef = useRef<HTMLDivElement>(null);
 
   // Initialize timezone time
   const initializeTimezone = useCallback(() => {
@@ -63,6 +65,28 @@ const Timer: React.FC<TimerProps> = ({
       initializeTimezone();
     }
   }, [serverTimeUrl, currentUrl, initializeTimezone]);
+
+  // Handle scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!timerRef.current) return;
+
+      const rect = timerRef.current.getBoundingClientRect();
+      const shouldShow = rect.top < 0;
+
+      setShowFixedBar(shouldShow);
+    };
+
+    // Initial check
+    handleScroll();
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   // Synchronize time with server
   const synchronizeTime = useCallback(async () => {
@@ -91,7 +115,6 @@ const Timer: React.FC<TimerProps> = ({
           details: `Offset: ${newOffset}ms`,
         });
 
-        // Save to localStorage
         localStorage.setItem('lastUrl', serverTimeUrl);
         localStorage.setItem('lastSync', String(Date.now()));
         localStorage.setItem('lastOffset', String(newOffset));
@@ -117,24 +140,18 @@ const Timer: React.FC<TimerProps> = ({
       return;
     }
 
-    // Check localStorage for cached URL
     const cachedUrl = localStorage.getItem('lastUrl');
     const lastSyncTime = Number(localStorage.getItem('lastSync'));
     const cachedOffset = Number(localStorage.getItem('lastOffset'));
 
     if (serverTimeUrl) {
-      // New URL provided - sync immediately
       synchronizeTime();
-
-      // Set up periodic sync
       syncIntervalRef.current = setInterval(synchronizeTime, SYNC_INTERVAL);
     } else if (cachedUrl && Date.now() - lastSyncTime < SYNC_INTERVAL) {
-      // Use cached values if recent
       setServerTime(Date.now() + cachedOffset);
       setLocalTimeOffset(cachedOffset);
       setCurrentUrl(cachedUrl);
     } else if (!serverTimeUrl && !cachedUrl) {
-      // Initialize timezone if no URL or cache
       initializeTimezone();
     }
 
@@ -164,13 +181,13 @@ const Timer: React.FC<TimerProps> = ({
   }, [serverTime, localTimeOffset, reactionError]);
 
   const handleDisconnect = () => {
-    clearTimeCache(); // Clear the time cache
+    clearTimeCache();
     localStorage.removeItem('lastUrl');
     localStorage.removeItem('lastSync');
     localStorage.removeItem('lastOffset');
     clearInterval(syncIntervalRef.current);
     setCurrentUrl("");
-    initializeTimezone(); // Initialize timezone immediately
+    initializeTimezone();
     onDisconnect?.();
   };
 
@@ -197,87 +214,118 @@ const Timer: React.FC<TimerProps> = ({
     : null;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <Badge
-        variant="outline"
-        className="gap-1 tabular-nums slashed-zero"
+    <>
+      {/* Fixed timer bar */}
+      <div
+        className={cn(
+          "fixed top-0 left-0 w-full bg-black transition-transform duration-300",
+          showFixedBar ? "translate-y-0" : "-translate-y-full"
+        )}
+        style={{
+          zIndex: 9999,
+        }}
       >
-        {new Date(serverTime).toLocaleDateString("ko-KR", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </Badge>
+        <div className="container mx-auto px-4 py-1">
+          <div className="flex flex-row gap-2 items-center justify-center text-lg font-medium text-center text-white tabular-nums slashed-zero">
+            <span className="relative flex h-2 w-2">
+              <span
+                className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${syncStatus.state === 'synchronized' ? 'bg-green-500' : 'bg-yellow-500'
+                  }`}
+              />
+              <span
+                className={`relative inline-flex h-2 w-2 rounded-full ${syncStatus.state === 'synchronized' ? 'bg-green-500' : 'bg-yellow-500'
+                  }`}
+              />
+            </span>
+            <p>{seoulTime}</p>
 
-      <div className="flex flex-col items-center">
-        <h1 className={cn(
-          "font-medium text-6xl md:text-7xl text-center tabular-nums slashed-zero transition-colors duration-300",
-          reactionError !== 0 && "text-blue-500"
-        )}>
-          {seoulTime}
-        </h1>
-        {originalSeoulTime && (
-          <div className="text-xl text-neutral-500 tabular-nums slashed-zero mt-1">
-            {originalSeoulTime}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="flex flex-row gap-2 items-center">
-        <span className="relative flex h-2 w-2">
-          <span
-            className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${syncStatus.state === 'synchronized' ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
-          />
-          <span
-            className={`relative inline-flex h-2 w-2 rounded-full ${syncStatus.state === 'synchronized' ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
-          />
-        </span>
+      {/* Main timer */}
+      <div ref={timerRef} className="flex flex-col items-center gap-2">
+        <Badge
+          variant="outline"
+          className="gap-1 tabular-nums slashed-zero"
+        >
+          {new Date(serverTime).toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </Badge>
 
-        <h3 className="flex flex-row gap-1 font-medium text-sm text-neutral-800">
-          {currentUrl !== "표준시" ? (
-            <>
-              <Link
-                className="underline underline-offset-2 hover:text-neutral-500 hover:decoration-neutral-500 ease-out duration-200"
-                href={`https://${currentUrl}`}
-                target="_blank"
-                prefetch={false}
-              >
-                {currentUrl}
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 ml-1"
-                onClick={handleDisconnect}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            currentUrl
+        <div className="flex flex-col items-center">
+          <h1 className={cn(
+            "font-medium text-5xl md:text-7xl text-center tabular-nums slashed-zero transition-colors duration-300",
+            reactionError !== 0 && "text-blue-500"
+          )}>
+            {seoulTime}
+          </h1>
+          {originalSeoulTime && (
+            <div className="text-xl text-neutral-500 tabular-nums slashed-zero mt-1">
+              {originalSeoulTime}
+            </div>
           )}
-          에 연결되었습니다.
-        </h3>
-      </div>
+        </div>
 
-      <div className="flex flex-col items-center gap-1">
-        <p className="text-xs text-neutral-500">
-          현재 오차: {currentError} ms
-        </p>
-        {lastSyncRef.current > 0 && currentUrl !== "표준시" && (
+        <div className="flex flex-row gap-2 items-center">
+          <span className="relative flex h-2 w-2">
+            <span
+              className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${syncStatus.state === 'synchronized' ? 'bg-green-500' : 'bg-yellow-500'
+                }`}
+            />
+            <span
+              className={`relative inline-flex h-2 w-2 rounded-full ${syncStatus.state === 'synchronized' ? 'bg-green-500' : 'bg-yellow-500'
+                }`}
+            />
+          </span>
+
+          <h3 className="flex flex-row gap-1 font-medium text-sm text-neutral-800">
+            {currentUrl !== "표준시" ? (
+              <>
+                <Link
+                  className="underline underline-offset-2 hover:text-neutral-500 hover:decoration-neutral-500 ease-out duration-200"
+                  href={`${currentUrl}`}
+                  target="_blank"
+                  prefetch={false}
+                >
+                  {currentUrl}
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 ml-1"
+                  onClick={handleDisconnect}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              currentUrl
+            )}
+            에 연결되었습니다.
+          </h3>
+        </div>
+
+        <div className="flex flex-col items-center gap-1">
           <p className="text-xs text-neutral-500">
-            마지막 동기화: {Math.floor((Date.now() - lastSyncRef.current) / 1000)}초 전
+            현재 오차: {currentError} ms
           </p>
-        )}
-        {reactionError !== 0 && (
-          <p className="text-xs text-blue-500">
-            반응 속도 보정: {reactionError}ms
-          </p>
-        )}
+          {lastSyncRef.current > 0 && currentUrl !== "표준시" && (
+            <p className="text-xs text-neutral-500">
+              마지막 동기화: {Math.floor((Date.now() - lastSyncRef.current) / 1000)}초 전
+            </p>
+          )}
+          {reactionError !== 0 && (
+            <p className="text-xs text-blue-500">
+              반응 속도 보정: {reactionError}ms
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

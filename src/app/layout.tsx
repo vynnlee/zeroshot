@@ -164,9 +164,9 @@ export default function RootLayout({
         )}
       </head>
       <body className={pretendard.className}>
-        <div className="relative min-h-screen flex flex-col">
+        <div className="bg-white relative min-h-screen flex flex-col">
           <Navbar />
-          <main className="flex-1 container flex flex-col items-center justify-center py-10">
+          <main className="flex-1 px-2 md:px-8 flex flex-col items-center justify-center py-2 md:py-10">
             {children}
           </main>
           <Footer />

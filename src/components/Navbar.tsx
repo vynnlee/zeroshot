@@ -16,7 +16,7 @@ export function Navbar() {
 
   return (
     <header className="w-full">
-      <div className="px-4 py-3 flex w-full items-center justify-between">
+      <div className="p-2 md:px-8 md:py-3 flex w-full items-center justify-between">
         <div className="mr-4 flex">
           <div className="flex flex-row items-center gap-2 mr-3">
             <Link href="/" passHref legacyBehavior>
