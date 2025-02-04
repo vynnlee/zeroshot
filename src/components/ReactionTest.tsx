@@ -82,7 +82,7 @@ const getRating = (error: number) => {
   return { text: 'BAD', image: '/stickers/bad.png', color: 'text-red-500' };
 };
 
-const ErrorChart = ({ data }: { data: ReactionResult[] }) => {
+const ErrorChart = ({ data, averageError }: { data: ReactionResult[], averageError: number | null }) => {
   const chartData = data.map((result, index) => ({
     attempt: index + 1,
     error: result.error,
@@ -116,6 +116,19 @@ const ErrorChart = ({ data }: { data: ReactionResult[] }) => {
             }}
           />
           <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+          {averageError !== null && (
+            <ReferenceLine 
+              y={averageError} 
+              stroke="hsl(var(--color-error))" 
+              strokeDasharray="3 3"
+              label={{ 
+                value: `평균: ${averageError}ms`, 
+                position: 'right',
+                fill: 'hsl(var(--color-error))',
+                fontSize: 10
+              }} 
+            />
+          )}
           <Area
             type="monotone"
             dataKey="error"
@@ -228,16 +241,20 @@ const ReactionTest: React.FC<ReactionTestProps> = ({
   const [targetTime, setTargetTime] = useState<Date>(initialTargetTime);
   const [startOffset, setStartOffset] = useState<number>(10);
   const [averageError, setAverageError] = useState<number | null>(null);
+  const [filteredAverageError, setFilteredAverageError] = useState<number | null>(null);
   const [earlyAverage, setEarlyAverage] = useState<number | null>(null);
+  const [filteredEarlyAverage, setFilteredEarlyAverage] = useState<number | null>(null);
   const [lateAverage, setLateAverage] = useState<number | null>(null);
+  const [filteredLateAverage, setFilteredLateAverage] = useState<number | null>(null);
   const [lastRating, setLastRating] = useState<{ text: string; image: string; color: string } | null>(null);
+  const [excludeOutliers, setExcludeOutliers] = useState<boolean>(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const startTimeRef = useRef<number>(0);
   const gameStartTimeRef = useRef<number>(0);
 
   const formatTimeForDisplay = (time: number) => {
-    return Math.abs(time).toFixed(0);
+    return time.toFixed(0);
   };
 
   const handleGameStart = (newTargetTime: Date, newStartOffset: number) => {
@@ -277,6 +294,62 @@ const ReactionTest: React.FC<ReactionTestProps> = ({
     }
   };
 
+  const calculateAverages = (results: ReactionResult[]) => {
+    if (results.length === 0) return {
+      normal: { earlyAvg: null, lateAvg: null, totalAvg: null },
+      filtered: { earlyAvg: null, lateAvg: null, totalAvg: null }
+    };
+
+    // 모든 데이터를 포함한 계산
+    const allEarlyResults = results.filter(r => r.type === 'early');
+    const allLateResults = results.filter(r => r.type === 'late');
+
+    const allEarlyAvg = allEarlyResults.length > 0
+      ? Math.round(allEarlyResults.reduce((sum, r) => sum + r.error, 0) / allEarlyResults.length)
+      : null;
+
+    const allLateAvg = allLateResults.length > 0
+      ? Math.round(allLateResults.reduce((sum, r) => sum + r.error, 0) / allLateResults.length)
+      : null;
+
+    const allTotalAvg = Math.round(
+      results.reduce((sum, r) => sum + r.error, 0) / results.length
+    );
+
+    // 극단값이 제외된 계산
+    let filteredResults = [...results];
+    if (results.length > 4) {
+      const errors = results.map(r => r.error).sort((a, b) => a - b);
+      const q1 = errors[Math.floor(errors.length * 0.25)];
+      const q3 = errors[Math.floor(errors.length * 0.75)];
+      const iqr = q3 - q1;
+      const lowerBound = q1 - 1.5 * iqr;
+      const upperBound = q3 + 1.5 * iqr;
+      
+      filteredResults = results.filter(r => r.error >= lowerBound && r.error <= upperBound);
+    }
+
+    const filteredEarlyResults = filteredResults.filter(r => r.type === 'early');
+    const filteredLateResults = filteredResults.filter(r => r.type === 'late');
+
+    const filteredEarlyAvg = filteredEarlyResults.length > 0
+      ? Math.round(filteredEarlyResults.reduce((sum, r) => sum + r.error, 0) / filteredEarlyResults.length)
+      : null;
+
+    const filteredLateAvg = filteredLateResults.length > 0
+      ? Math.round(filteredLateResults.reduce((sum, r) => sum + r.error, 0) / filteredLateResults.length)
+      : null;
+
+    const filteredTotalAvg = Math.round(
+      filteredResults.reduce((sum, r) => sum + r.error, 0) / filteredResults.length
+    );
+
+    return {
+      normal: { earlyAvg: allEarlyAvg, lateAvg: allLateAvg, totalAvg: allTotalAvg },
+      filtered: { earlyAvg: filteredEarlyAvg, lateAvg: filteredLateAvg, totalAvg: filteredTotalAvg }
+    };
+  };
+
   const handleGameAction = () => {
     if (gameState === 'waiting') {
       const startTime = new Date(targetTime.getTime() - startOffset * 1000);
@@ -313,24 +386,15 @@ const ReactionTest: React.FC<ReactionTestProps> = ({
       const newResults = [...results, newResult].slice(-MAX_RESULTS);
       setResults(newResults);
 
-      const earlyResults = newResults.filter(r => r.type === 'early');
-      const lateResults = newResults.filter(r => r.type === 'late');
-
-      const newEarlyAverage = earlyResults.length > 0
-        ? Math.round(earlyResults.reduce((sum, r) => sum + Math.abs(r.error), 0) / earlyResults.length)
-        : null;
-
-      const newLateAverage = lateResults.length > 0
-        ? Math.round(lateResults.reduce((sum, r) => sum + r.error, 0) / lateResults.length)
-        : null;
-
-      setEarlyAverage(newEarlyAverage);
-      setLateAverage(newLateAverage);
-
-      const newAverageError = Math.round(
-        newResults.reduce((sum, r) => sum + r.error, 0) / newResults.length
-      );
-      setAverageError(newAverageError);
+      const { normal, filtered } = calculateAverages(newResults);
+      
+      setEarlyAverage(normal.earlyAvg);
+      setLateAverage(normal.lateAvg);
+      setAverageError(normal.totalAvg);
+      
+      setFilteredEarlyAverage(filtered.earlyAvg);
+      setFilteredLateAverage(filtered.lateAvg);
+      setFilteredAverageError(filtered.totalAvg);
 
       clearInterval(intervalRef.current);
       setGameState('result');
@@ -454,58 +518,90 @@ const ReactionTest: React.FC<ReactionTestProps> = ({
             <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">반응 시간 기록</span>
-                {averageError !== null && !isErrorApplied && (
-                  <div className="flex items-center gap-2">
-                    <TooltipProvider>
-                      <UITooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500">
-                            <Info className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>보정값을 적용하면 메인 타이머에 평균 오차만큼 시간이 조정됩니다.</p>
-                          <p>이를 통해 더 정확한 시간 측정이 가능합니다.</p>
-                        </TooltipContent>
-                      </UITooltip>
-                    </TooltipProvider>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={applyError}
-                      className="h-8 px-2 flex items-center gap-1 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
-                    >
-                      <Check className="h-4 w-4" />
-                      타이머에 보정값 적용
-                    </Button>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      id="excludeOutliers"
+                      checked={excludeOutliers}
+                      onChange={(e) => {
+                        setExcludeOutliers(e.target.checked);
+                        const { normal, filtered } = calculateAverages(results);
+                        setEarlyAverage(normal.earlyAvg);
+                        setLateAverage(normal.lateAvg);
+                        setAverageError(normal.totalAvg);
+                        setFilteredEarlyAverage(filtered.earlyAvg);
+                        setFilteredLateAverage(filtered.lateAvg);
+                        setFilteredAverageError(filtered.totalAvg);
+                      }}
+                      className="w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="excludeOutliers" className="text-sm text-neutral-600">
+                      극단값 제외
+                    </label>
                   </div>
-                )}
+                  {averageError !== null && !isErrorApplied && (
+                    <div className="flex items-center gap-2">
+                      <TooltipProvider>
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500">
+                              <Info className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>보정값을 적용하면 메인 타이머에 평균 오차만큼 시간이 조정됩니다.</p>
+                            <p>이를 통해 더 정확한 시간 측정이 가능합니다.</p>
+                          </TooltipContent>
+                        </UITooltip>
+                      </TooltipProvider>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={applyError}
+                        className="h-8 px-2 flex items-center gap-1 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
+                      >
+                        <Check className="h-4 w-4" />
+                        타이머에 보정값 적용
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <span className="text-sm text-neutral-600">평균 빠른 클릭</span>
                   <div className="font-medium">
-                    {earlyAverage !== null ? `-${formatTimeForDisplay(earlyAverage)}ms` : "-"}
+                    {excludeOutliers 
+                      ? (filteredEarlyAverage !== null ? `${formatTimeForDisplay(filteredEarlyAverage)}ms` : "-")
+                      : (earlyAverage !== null ? `${formatTimeForDisplay(earlyAverage)}ms` : "-")}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-neutral-600">평균 늦은 클릭</span>
                   <div className="font-medium">
-                    {lateAverage !== null ? `+${formatTimeForDisplay(lateAverage)}ms` : "-"}
+                    {excludeOutliers
+                      ? (filteredLateAverage !== null ? `+${formatTimeForDisplay(filteredLateAverage)}ms` : "-")
+                      : (lateAverage !== null ? `+${formatTimeForDisplay(lateAverage)}ms` : "-")}
                   </div>
                 </div>
                 <div className="space-y-1">
                   <span className="text-sm text-green-500">전체 평균 오차</span>
                   <div className="font-medium">
-                    {averageError !== null ? `${averageError > 0 ? '+' : ''}${formatTimeForDisplay(averageError)}ms` : "-"}
+                    {excludeOutliers
+                      ? (filteredAverageError !== null ? `${filteredAverageError > 0 ? '+' : ''}${formatTimeForDisplay(filteredAverageError)}ms` : "-")
+                      : (averageError !== null ? `${averageError > 0 ? '+' : ''}${formatTimeForDisplay(averageError)}ms` : "-")}
                   </div>
                 </div>
               </div>
-              <ErrorChart data={results} />
+              <ErrorChart 
+                data={results} 
+                averageError={excludeOutliers ? filteredAverageError : averageError} 
+              />
             </div>
 
-            {isErrorApplied && (
+            {isErrorApplied && averageError !== null && (
               <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
                 <Check className="h-5 w-5 text-blue-500 mt-0.5" />
                 <div className="space-y-1">
@@ -513,7 +609,7 @@ const ReactionTest: React.FC<ReactionTestProps> = ({
                     보정값이 적용되었습니다
                   </p>
                   <p className="text-sm text-neutral-600">
-                    메인 타이머에 {formatTimeForDisplay(averageError || 0)}ms의 보정값이 적용되었습니다.
+                    메인 타이머에 {averageError > 0 ? '+' : ''}{formatTimeForDisplay(averageError)}ms의 보정값이 적용되었습니다.
                     <Button
                       variant="link"
                       size="sm"

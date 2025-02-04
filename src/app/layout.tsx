@@ -165,6 +165,9 @@ export default function RootLayout({
       </head>
       <body className={pretendard.className}>
         <div className="bg-white relative min-h-screen flex flex-col">
+          <div className="bg-black text-white py-2 text-center text-sm font-regular">
+            서울과기대 학생 여러분의 올클을 응원합니다! 🎯 @vynn
+          </div>
           <Navbar />
           <main className="flex-1 px-2 md:px-8 flex flex-col items-center justify-center py-2 md:py-10">
             {children}
